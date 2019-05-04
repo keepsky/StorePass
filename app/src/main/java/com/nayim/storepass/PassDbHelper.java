@@ -1,6 +1,7 @@
 package com.nayim.storepass;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Environment;
@@ -11,6 +12,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
 
 public class PassDbHelper extends SQLiteOpenHelper {
 
@@ -35,6 +37,9 @@ public class PassDbHelper extends SQLiteOpenHelper {
     private static final String SQL_DELETE_ENTRIES =
             "DROP TABLE IF EXISTS " + PassContract.PassEntry.TABLE_NAME;
 
+    private static final String SQL_GET_ENTRIES =
+            "SELECT * FROM " + PassContract.PassEntry.TABLE_NAME;
+
     public static PassDbHelper getInstance(Context context) {
         if(sInstance == null) {
             sInstance = new PassDbHelper(context);
@@ -54,6 +59,25 @@ public class PassDbHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL(SQL_DELETE_ENTRIES);
         onCreate(db);
+    }
+
+    public void makePassList(ArrayList<Password> data) {
+//        ArrayList<Password> data = new ArrayList<>();
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        Cursor cursor = db.rawQuery(SQL_GET_ENTRIES, null);
+        Password item = null;
+        if(cursor.moveToFirst()) {
+            do {
+                item = new Password();
+                item.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_TITLE)));
+                item.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_COLOR)));
+                item.setAccount(cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_ACCOUNT)));
+                item.setUrl(cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_URL)));
+                item.setDate(cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_DATE)));
+                data.add(item);
+            } while (cursor.moveToNext());
+        }
     }
 
     public boolean onBackup(Context context, SQLiteDatabase db) {

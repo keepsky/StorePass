@@ -15,6 +15,8 @@ import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+
 public class ViewActivity extends AppCompatActivity {
 
     private static final String TAG = "ViewActivity";
@@ -26,6 +28,7 @@ public class ViewActivity extends AppCompatActivity {
     private EditText mUrlEditText;
     private EditText mContentsEditText;
 
+    private int mPosition;
     private long mPassId;
     private String mTitle;
     private String mAccount;
@@ -50,6 +53,7 @@ public class ViewActivity extends AppCompatActivity {
         Intent intent = getIntent();
         if(intent != null) {
             mPassId = intent.getLongExtra("id", -1);
+            mPosition = intent.getIntExtra("position", -1);
             mTitle = intent.getStringExtra(PassContract.PassEntry.COLUMN_NAME_TITLE);
             mAccount = intent.getStringExtra(PassContract.PassEntry.COLUMN_NAME_ACCOUNT);
             mPw = intent.getStringExtra(PassContract.PassEntry.COLUMN_NAME_PW);
@@ -79,6 +83,7 @@ public class ViewActivity extends AppCompatActivity {
 
                 intent.putExtra("type", MainActivity.REQUEST_CODE_EDIT);
                 intent.putExtra("id", mPassId);
+                intent.putExtra("position", mPosition);
                 intent.putExtra(PassContract.PassEntry.COLUMN_NAME_TITLE, mTitle);
                 intent.putExtra(PassContract.PassEntry.COLUMN_NAME_ACCOUNT, mAccount);
                 intent.putExtra(PassContract.PassEntry.COLUMN_NAME_PW, mPw);
@@ -102,6 +107,8 @@ public class ViewActivity extends AppCompatActivity {
                             Toast.makeText(ViewActivity.this, "삭제 실패", Toast.LENGTH_SHORT).show();
                         } else {
 //                            mAdaptor.swapCursor(getPassCursor());
+                            ArrayList<Password> passList = PassContract.getInstance();
+                            passList.remove(mPosition);
                             Toast.makeText(ViewActivity.this, "삭제 완료", Toast.LENGTH_SHORT).show();
                         }
                         setResult(RESULT_OK);
