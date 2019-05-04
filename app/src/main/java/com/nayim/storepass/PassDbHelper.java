@@ -3,6 +3,7 @@ package com.nayim.storepass;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Environment;
 import android.util.Log;
@@ -11,6 +12,9 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
@@ -21,6 +25,7 @@ public class PassDbHelper extends SQLiteOpenHelper {
 
     private static final int DB_VERSION = 1;
     private static final String DB_NAME = "pass.db";
+    private static final String DB_PATH = "/data/data/PACKAGE/databases/";
     private static final String DB_BACKUP_NAME = "mypass.backup";
     private static final String SQL_CREATE_ENTRIES =
             String.format("CREATE TABLE %s (%s INTEGER PRIMARY KEY AUTOINCREMENT, %s TEXT, %s BIGINT, %s TEXT, %s TEXT, %s TEXT, %s TEXT, %s DATE)"
@@ -46,6 +51,7 @@ public class PassDbHelper extends SQLiteOpenHelper {
         }
         return sInstance;
     }
+
     private PassDbHelper(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
     }
@@ -156,4 +162,32 @@ public class PassDbHelper extends SQLiteOpenHelper {
         return false;
     }
 
+    public synchronized Cursor getFilteredCursor(String prefix) {
+        Cursor cursor = null;
+        SQLiteDatabase db = sInstance.getReadableDatabase();
+
+        if(prefix.compareTo("") == 0){
+            cursor = db.query(PassContract.PassEntry.TABLE_NAME,
+                    new String[]{PassContract.PassEntry.COLUMN_NAME_TITLE},
+                    PassContract.PassEntry.COLUMN_NAME_TITLE + " like '' || ? || '%'",
+                    new String[]{"*"},
+                    null,
+                    null,
+                    null);
+        } else {
+            cursor = db.query(PassContract.PassEntry.TABLE_NAME,
+                    new String[]{PassContract.PassEntry.COLUMN_NAME_TITLE},
+                    PassContract.PassEntry.COLUMN_NAME_TITLE + " like '' || ? || '%'",
+                    new String[]{prefix},
+                    null,
+                    null,
+                    null);
+        }
+
+        if(cursor == null || cursor.getCount() <=0) {
+            new Exception("Cursor " + (cursor==null?"null":"fill with wrong data"));
+        }
+
+        return cursor;
+    }
 }
