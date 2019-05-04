@@ -288,17 +288,6 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
-        @Override
-        public Cursor runQueryOnBackgroundThread(CharSequence constraint) {
-            FilterQueryProvider filter = getFilterQueryProvider();
-            if(filter != null) {
-                return filter.runQuery(constraint);
-            }
-
-            Uri uri =
-
-            return super.runQueryOnBackgroundThread(constraint);
-        }
     }
 
 }
