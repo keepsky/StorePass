@@ -21,7 +21,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.CursorAdapter;
-import android.widget.FilterQueryProvider;
 import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -29,8 +28,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.nayim.storepass.auth.AuthActivity;
-
-import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -40,8 +37,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int REQUEST_CODE_AUTH = 1003;
     private static final String TAG = "MainActivity";
 
-//    private PassAdaptor mAdaptor;
-    private CustomPassAdapter mPassAdapter;
+    private PassCursorAdapter mPassAdapter;
     private PassDbHelper mDbHelper;
     private SQLiteDatabase mDb;
     private ListView mListView;
@@ -53,17 +49,19 @@ public class MainActivity extends AppCompatActivity {
 
         // TODO: Need to fix for backup and restore
         // Check permission
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if(!Settings.System.canWrite(this)) {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
-                intent.setData(Uri.parse("package:" + this.getPackageName()));
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
-            }
-        }
+//        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//            if(!Settings.System.canWrite(this)) {
+//                Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+//                intent.setData(Uri.parse("package:" + this.getPackageName()));
+//                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                startActivity(intent);
+//            }
+//        }
 
         // TODO: Implement authentication feature
 //        startActivityForResult(new Intent(MainActivity.this, AuthActivity.class), REQUEST_CODE_AUTH);
+
+
 
         mDbHelper = PassDbHelper.getInstance(this);
         mDb = mDbHelper.getWritableDatabase();
@@ -81,15 +79,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-//        Cursor cursor = getPassCursor();
-//        mAdaptor = new PassAdaptor(this, cursor);
-//        mListView = findViewById(R.id.pass_list);
-//        mListView.setAdapter(mAdaptor);
-
-        ArrayList<Password> passwordList = PassContract.getInstance();
-        mDbHelper.makePassList(passwordList);
+        Cursor cursor = getPassCursor();
+        mPassAdapter = new PassCursorAdapter(this, cursor);
         mListView = findViewById(R.id.pass_list);
-        mPassAdapter = new CustomPassAdapter(this, passwordList);
         mListView.setAdapter(mPassAdapter);
 
 
@@ -97,31 +89,21 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Intent intent = new Intent(MainActivity.this, ViewActivity.class);
+                Cursor cursor = (Cursor) mPassAdapter.getItem(position);
 
-//                Cursor cursor = (Cursor) mAdaptor.getItem(position);
-//                String title = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_TITLE));
-//                String account = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_ACCOUNT));
-//                String pw = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_PW));
-//                String url = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_URL));
-//                String contents = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_CONTENTS));
-//                intent.putExtra("type", REQUEST_CODE_VIEW);
-//                intent.putExtra("id", id);
-//                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_TITLE, title);
-//                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_ACCOUNT, account);
-//                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_PW, pw);
-//                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_URL, url);
-//                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_CONTENTS, contents);
-
-                Password item = (Password)mPassAdapter.getItem(position);
+                String title = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_TITLE));
+                String account = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_ACCOUNT));
+                String pw = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_PW));
+                String url = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_URL));
+                String contents = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_CONTENTS));
 
                 intent.putExtra("type", REQUEST_CODE_VIEW);
                 intent.putExtra("id", id);
-                intent.putExtra("position", position);
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_TITLE, item.getTitle());
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_ACCOUNT, item.getAccount());
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_PW, item.getPw());
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_URL, item.getUrl());
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_CONTENTS, item.getContents());
+                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_TITLE, title);
+                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_ACCOUNT, account);
+                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_PW, pw);
+                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_URL, url);
+                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_CONTENTS, contents);
 
                 startActivityForResult(intent, REQUEST_CODE_VIEW);
             }
@@ -206,6 +188,7 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if((requestCode == REQUEST_CODE_INSERT || requestCode == REQUEST_CODE_VIEW )&& resultCode == RESULT_OK) {
 //            mAdaptor.swapCursor(getPassCursor());
+            mPassAdapter.swapCursor(getPassCursor());
 
             Log.d(TAG, "requestCode : " + requestCode);
 //            if(data == null) {

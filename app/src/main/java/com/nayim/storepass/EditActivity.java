@@ -13,7 +13,6 @@ import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Random;
@@ -30,7 +29,6 @@ public class EditActivity extends AppCompatActivity {
 
     private long mPassId;
     private int mType;
-    private int mPosition;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +49,6 @@ public class EditActivity extends AppCompatActivity {
 
             mType = intent.getIntExtra("type", -1);
             mPassId = intent.getLongExtra("id", -1);
-            mPosition = intent.getIntExtra("position", -1);
 
             switch(mType){
                 case MainActivity.REQUEST_CODE_EDIT:
@@ -89,27 +86,20 @@ public class EditActivity extends AppCompatActivity {
 
         switch(item.getItemId()){
             case R.id.save_menu_item:
-                Password newItem = saveItem();
-                Log.e(TAG, "title = " + newItem.getTitle());
-
-                switch(mType) {
-                    case MainActivity.REQUEST_CODE_EDIT:
-                        Intent intent = new Intent(EditActivity.this, ViewActivity.class);
-
-                        intent.putExtra(PassContract.PassEntry.COLUMN_NAME_TITLE, newItem.getTitle());
-                        intent.putExtra(PassContract.PassEntry.COLUMN_NAME_ACCOUNT, newItem.getAccount());
-                        intent.putExtra(PassContract.PassEntry.COLUMN_NAME_PW, newItem.getPw());
-                        intent.putExtra(PassContract.PassEntry.COLUMN_NAME_URL, newItem.getUrl());
-                        intent.putExtra(PassContract.PassEntry.COLUMN_NAME_CONTENTS, newItem.getContents());
-
-                        setResult(RESULT_OK, intent);
-                        break;
-
-                    case MainActivity.REQUEST_CODE_INSERT:
-                        setResult(RESULT_OK);
-                        break;
+                saveItem();
+                Intent intent;
+                if(mType == MainActivity.REQUEST_CODE_EDIT) {
+                    intent = new Intent(EditActivity.this, ViewActivity.class);
+                } else {
+                    intent = new Intent(EditActivity.this, MainActivity.class);
                 }
-
+                Log.e(TAG, "title = " + mTitleEditText.getText().toString());
+                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_TITLE, mTitleEditText.getText().toString());
+                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_ACCOUNT, mAccountEditText.getText().toString());
+                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_PW, mPwEditText.getText().toString());
+                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_URL, mUrlEditText.getText().toString());
+                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_CONTENTS, mContentsEditText.getText().toString());
+                setResult(RESULT_OK, intent);
                 finish();
                 return true;
         }
@@ -121,37 +111,29 @@ public class EditActivity extends AppCompatActivity {
         super.onBackPressed();
     }
 
-    private Password saveItem() {
+    private void saveItem() {
+        String title = mTitleEditText.getText().toString();
+        String account = mAccountEditText.getText().toString();
+        String pw = mPwEditText.getText().toString();
+        String url = mUrlEditText.getText().toString();
+        String contents = mContentsEditText.getText().toString();
 
-        Password item = new Password();
-        ArrayList<Password> passList = PassContract.getInstance();
-
-        item.setTitle(mTitleEditText.getText().toString());
-        item.setAccount(mAccountEditText.getText().toString());
-        item.setPw(mPwEditText.getText().toString());
-        item.setUrl(mUrlEditText.getText().toString());
-        item.setContents(mContentsEditText.getText().toString());
-
-        Log.e(TAG, "title = " + item.getTitle());
-        Log.e(TAG, "account = " + item.getAccount());
-        Log.e(TAG, "pw = " + item.getPw());
-        Log.e(TAG, "url = " + item.getUrl());
-
+        Log.e(TAG, "title = " + title);
+        Log.e(TAG, "account = " + account);
+        Log.e(TAG, "pw = " + pw);
+        Log.e(TAG, "url = " + url);
 
         ContentValues val = new ContentValues();
-        val.put(PassContract.PassEntry.COLUMN_NAME_TITLE, item.getTitle());
+        val.put(PassContract.PassEntry.COLUMN_NAME_TITLE, title);
         if(mPassId == -1) {
             Random random = new Random();
             int color = Color.argb(255, random.nextInt(256), random.nextInt(256), random.nextInt(256));
             val.put(PassContract.PassEntry.COLUMN_NAME_COLOR, color);
-            item.setColor(color);
-        } else {
-            item.setColor(passList.get(mPosition).getColor());
         }
-        val.put(PassContract.PassEntry.COLUMN_NAME_ACCOUNT, item.getAccount());
-        val.put(PassContract.PassEntry.COLUMN_NAME_PW, item.getPw());
-        val.put(PassContract.PassEntry.COLUMN_NAME_URL, item.getUrl());
-        val.put(PassContract.PassEntry.COLUMN_NAME_CONTENTS, item.getContents());
+        val.put(PassContract.PassEntry.COLUMN_NAME_ACCOUNT, account);
+        val.put(PassContract.PassEntry.COLUMN_NAME_PW, pw);
+        val.put(PassContract.PassEntry.COLUMN_NAME_URL, url);
+        val.put(PassContract.PassEntry.COLUMN_NAME_CONTENTS, contents);
 
         Calendar calendar = Calendar.getInstance();
         String today = new StringBuilder()
@@ -159,8 +141,7 @@ public class EditActivity extends AppCompatActivity {
                 .append(calendar.get(calendar.MONTH)+1).append('-')
                 .append(calendar.get(calendar.DATE)).toString();
 
-        val.put(PassContract.PassEntry.COLUMN_NAME_DATE, today);
-        item.setDate(today);
+        val.put(PassContract.PassEntry.COLUMN_NAME_DATE, today.toString());
 
         SQLiteDatabase db = PassDbHelper.getInstance(this).getWritableDatabase();
         if(mPassId == -1) {
@@ -168,7 +149,6 @@ public class EditActivity extends AppCompatActivity {
             if(newRowId == -1){
                 Toast.makeText(this, "저장 실패", Toast.LENGTH_SHORT).show();
             } else {
-                passList.add(item);
                 Toast.makeText(this, "저장 성공", Toast.LENGTH_SHORT).show();
             }
         } else {
@@ -177,11 +157,8 @@ public class EditActivity extends AppCompatActivity {
             if(count == 0) {
                 Toast.makeText(this, "수정 실패", Toast.LENGTH_SHORT).show();
             } else {
-                passList.set(mPosition, item);
                 Toast.makeText(this, "수정 완료", Toast.LENGTH_SHORT).show();
             }
         }
-
-        return item;
     }
 }

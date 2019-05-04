@@ -106,9 +106,6 @@ public class ViewActivity extends AppCompatActivity {
                         if(count == 0){
                             Toast.makeText(ViewActivity.this, "삭제 실패", Toast.LENGTH_SHORT).show();
                         } else {
-//                            mAdaptor.swapCursor(getPassCursor());
-                            ArrayList<Password> passList = PassContract.getInstance();
-                            passList.remove(mPosition);
                             Toast.makeText(ViewActivity.this, "삭제 완료", Toast.LENGTH_SHORT).show();
                         }
                         setResult(RESULT_OK);

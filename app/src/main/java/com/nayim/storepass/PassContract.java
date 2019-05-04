@@ -2,28 +2,16 @@ package com.nayim.storepass;
 
 import android.provider.BaseColumns;
 
-import java.util.ArrayList;
-
 public final class PassContract {
 
-//    String mTitle;
-//    String mAccount;
-//    String mPw;
-//    String mUrl;
-//    String mContents;
-
-    static ArrayList<Password> mPassList;
+    String mTitle;
+    String mAccount;
+    String mPw;
+    String mUrl;
+    String mContents;
 
     private PassContract(){
 
-    }
-
-    public static ArrayList<Password> getInstance() {
-        if(mPassList == null) {
-            mPassList = new ArrayList<>();
-        }
-
-        return mPassList;
     }
 
     public static class PassEntry implements BaseColumns {
