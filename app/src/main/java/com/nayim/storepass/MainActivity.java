@@ -1,16 +1,20 @@
 package com.nayim.storepass;
 
 import android.Manifest;
+import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.SearchView;
@@ -23,7 +27,12 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import java.io.Serializable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+
 
 public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -87,7 +96,8 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             }
         });
 
-        openDatabaseAndBindView();
+        openDatabase();
+        bindViewWithDb();
 
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -161,12 +171,11 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                 return true;
 
             case R.id.backup_menu_item:
-                mDbHelper.backupDb(this);
+                backupDatabase();
                 return true;
 
             case R.id.restore_menu_item:
-                if(mDbHelper.restoreDb(this, mDb))
-                    openDatabaseAndBindView();
+                restoreDialog();
                 return true;
 
             case R.id.help_menu_item:
@@ -196,11 +205,37 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         }
     }
 
-    private void openDatabaseAndBindView(){
-        mListView = findViewById(R.id.pass_list);
-        mListView.setTextFilterEnabled(true);
+    private void restoreDialog() {
+        final CharSequence[] PhoneModels = {"교체", "병합", "취소"};
+        AlertDialog.Builder alt_bld = new AlertDialog.Builder(this);
+//        alt_bld.setIcon(R.drawable.);
+        alt_bld.setTitle("방법을 선책하세요");
+        alt_bld.setSingleChoiceItems(PhoneModels, -1, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int item) {
+                switch (item) {
+                    case 0:
+                        replaceDatabase();
+                        break;
+                    case 1:
+                        restoreDatabase();
+                        break;
+                    default:
+                        break;
+                }
+                dialog.cancel();
+            }
+        });
+
+        AlertDialog alert = alt_bld.create();
+        alert.show();
+    }
+    private void openDatabase() {
         mDbHelper = PassDbHelper.getInstance(this);
         mDb = mDbHelper.getWritableDatabase();
+    }
+    private void bindViewWithDb() {
+        mListView = findViewById(R.id.pass_list);
+        mListView.setTextFilterEnabled(true);
 
         Cursor cursor = getPassCursor();
         Log.e(TAG, "onOptionsItemSelected(): cursor.getCount()=" + cursor.getCount());
@@ -209,6 +244,187 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         mListView.setAdapter(mPassAdapter);
     }
 
+    public boolean backupDatabase() {
+        try {
+            File sd = Environment.getExternalStorageDirectory();
+            File data = Environment.getDataDirectory();
+
+            Log.e(TAG, "sd : " + sd.toString());
+            Log.e(TAG, "data : " + data.toString());
+
+            if (sd.canWrite()) {
+                String currentDBPath = new StringBuilder()
+                        .append("//data//")
+                        .append(this.getPackageName())
+                        .append("//databases//")
+                        .append(PassDbHelper.DB_NAME)
+                        .toString();
+
+                String backupDBPath = PassDbHelper.DB_NAME_BACKUP;
+
+                Log.e(TAG, "currentDBPath : " + currentDBPath);
+                Log.e(TAG, "backupDBPath : " + backupDBPath);
+
+                File currentDB = new File(data, currentDBPath);
+                File backupDB = new File(sd, backupDBPath);
+
+                if (currentDB.exists()) {
+                    FileChannel src = new FileInputStream(currentDB).getChannel();
+                    FileChannel dst = new FileOutputStream(backupDB).getChannel();
+                    dst.transferFrom(src, 0, src.size());
+                    src.close();
+                    dst.close();
+                    Toast.makeText(this, "백업 성공", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "백업 실패", Toast.LENGTH_SHORT).show();
+        }
+
+        return false;
+    }
+
+    private void restoreDatabase() {
+
+        try {
+            File sd = Environment.getExternalStorageDirectory();
+            File data = Environment.getDataDirectory();
+            if (sd.canWrite()) {
+                String currentDBPath = new StringBuilder()
+                        .append("//data//" )
+                        .append(this.getPackageName())
+                        .append("//databases//")
+                        .append(PassDbHelper.DB_NAME_NEW)
+                        .toString();
+
+                String orgDBPath = new StringBuilder()
+                        .append("//data//" )
+                        .append(this.getPackageName())
+                        .append("//databases//")
+                        .append(PassDbHelper.DB_NAME)
+                        .toString();
+
+                Log.e(TAG, "restoreDatabase(): currentDBPath : " + currentDBPath);
+                Log.e(TAG, "restoreDatabase(): orgDBPath : " + orgDBPath);
+
+
+                String backupDBPath = PassDbHelper.DB_NAME_BACKUP; // From SD directory.
+
+                File orgDB = new File(data, orgDBPath);
+                File currentDB = new File(data, currentDBPath);
+                File backupDB = new File(sd, backupDBPath);
+
+                Log.e(TAG, "restoreDatabase(): 1");
+                FileChannel src = new FileInputStream(backupDB).getChannel();
+                FileChannel dst = new FileOutputStream(currentDB).getChannel();
+                dst.transferFrom(src, 0, src.size());
+                src.close();
+                dst.close();
+
+                if(orgDB.exists()) {
+                    boolean b;
+                    Log.e(TAG, "restoreDatabase(): 2");
+                    ArrayList<Password> passList = getAllPassItems();
+                    mDbHelper.close();
+                    b = orgDB.delete();
+                    Log.e(TAG, "restoreDatabase(): orgDB.delete()="+b);
+                    b = currentDB.renameTo(orgDB);
+                    Log.e(TAG, "restoreDatabase(): currentDB.renameTo(orgDB)="+b);
+
+                    openDatabase();
+                    putAllPassItems(mDb, passList);
+                    bindViewWithDb();
+                }
+                Toast.makeText(this, "복원 성공", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "복원 실패", Toast.LENGTH_SHORT).show();
+
+        }
+    }
+
+
+    public void replaceDatabase() {
+        try {
+            File sd = Environment.getExternalStorageDirectory();
+            File data = Environment.getDataDirectory();
+            if (sd.canWrite()) {
+                String currentDBPath = new StringBuilder()
+                        .append("//data//" )
+                        .append(this.getPackageName())
+                        .append("//databases//")
+                        .append(PassDbHelper.DB_NAME)
+                        .toString();
+
+                Log.e(TAG, "currentDBPath : " + currentDBPath);
+
+                String backupDBPath = PassDbHelper.DB_NAME_BACKUP; // From SD directory.
+                File currentDB = new File(data, currentDBPath);
+                File backupDB = new File(sd, backupDBPath);
+
+                if(currentDB.exists()) {
+                    FileChannel src = new FileInputStream(backupDB).getChannel();
+                    FileChannel dst = new FileOutputStream(currentDB).getChannel();
+                    dst.transferFrom(src, 0, src.size());
+                    src.close();
+                    dst.close();
+
+                    mDbHelper.close();
+                    openDatabase();
+                    bindViewWithDb();
+
+                }
+
+                Toast.makeText(this, "복원 성공", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "복원 실패", Toast.LENGTH_SHORT).show();
+
+        }
+    }
+
+    private ArrayList<Password> getAllPassItems() {
+        ArrayList<Password> arrayList = new ArrayList<>();
+
+        Cursor cursor = mDbHelper.getReadableDatabase()
+                .rawQuery("SELECT * FROM "+PassContract.PassEntry.TABLE_NAME, null);
+
+        if(cursor.moveToFirst()) {
+            do {
+                Password item = new Password();
+                item.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_TITLE)));
+                item.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_COLOR)));
+                item.setAccount(cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_ACCOUNT)));
+                item.setPw(cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_PW)));
+                item.setUrl(cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_URL)));
+                item.setContents(cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_CONTENTS)));
+                item.setDate(cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_DATE)));
+                arrayList.add(item);
+            } while(cursor.moveToNext());
+        }
+
+        return arrayList;
+    }
+
+    private void putAllPassItems(SQLiteDatabase db, ArrayList<Password> arrayList) {
+
+        for (int i = 0; i < arrayList.size(); i++) {
+            Password item = arrayList.get(i);
+            ContentValues val = new ContentValues();
+            val.put(PassContract.PassEntry.COLUMN_NAME_TITLE, item.getTitle());
+            val.put(PassContract.PassEntry.COLUMN_NAME_COLOR, item.getColor());
+            val.put(PassContract.PassEntry.COLUMN_NAME_ACCOUNT, item.getAccount());
+            val.put(PassContract.PassEntry.COLUMN_NAME_PW, item.getPw());
+            val.put(PassContract.PassEntry.COLUMN_NAME_URL, item.getUrl());
+            val.put(PassContract.PassEntry.COLUMN_NAME_CONTENTS, item.getContents());
+            val.put(PassContract.PassEntry.COLUMN_NAME_DATE, item.getDate());
+            long newRowId = db.insert(PassContract.PassEntry.TABLE_NAME, null, val);
+        }
+    }
 
     private void checkPermission() {
         int writeExtStoragePermission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
