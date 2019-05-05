@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Environment;
 import android.util.Log;
+import android.util.MonthDisplayHelper;
 import android.widget.Toast;
 
 import java.io.File;
@@ -25,27 +26,27 @@ public class PassDbHelper extends SQLiteOpenHelper {
     private static final String DB_NAME_BACKUP = "mypass.backup";
     private static final String SQL_CREATE_ENTRIES =
             String.format("CREATE TABLE IF NOT EXISTS %s (%s INTEGER PRIMARY KEY AUTOINCREMENT, %s TEXT, %s BIGINT, %s TEXT, %s TEXT, %s TEXT, %s TEXT, %s DATE)"
-                    ,PassContract.PassEntry.TABLE_NAME
-                    ,PassContract.PassEntry._ID
-                    ,PassContract.PassEntry.COLUMN_NAME_TITLE
-                    ,PassContract.PassEntry.COLUMN_NAME_COLOR
-                    ,PassContract.PassEntry.COLUMN_NAME_ACCOUNT
-                    ,PassContract.PassEntry.COLUMN_NAME_PW
-                    ,PassContract.PassEntry.COLUMN_NAME_URL
-                    ,PassContract.PassEntry.COLUMN_NAME_CONTENTS
-                    ,PassContract.PassEntry.COLUMN_NAME_DATE);
+                    , PassContract.PassEntry.TABLE_NAME
+                    , PassContract.PassEntry._ID
+                    , PassContract.PassEntry.COLUMN_NAME_TITLE
+                    , PassContract.PassEntry.COLUMN_NAME_COLOR
+                    , PassContract.PassEntry.COLUMN_NAME_ACCOUNT
+                    , PassContract.PassEntry.COLUMN_NAME_PW
+                    , PassContract.PassEntry.COLUMN_NAME_URL
+                    , PassContract.PassEntry.COLUMN_NAME_CONTENTS
+                    , PassContract.PassEntry.COLUMN_NAME_DATE);
 
     private static final String SQL_CREATE_NEW_ENTRIES =
             String.format("CREATE TABLE %s (%s INTEGER PRIMARY KEY AUTOINCREMENT, %s TEXT, %s BIGINT, %s TEXT, %s TEXT, %s TEXT, %s TEXT, %s DATE)"
-                    ,PassContract.PassEntry.TABLE_NAME_NEW
-                    ,PassContract.PassEntry._ID
-                    ,PassContract.PassEntry.COLUMN_NAME_TITLE
-                    ,PassContract.PassEntry.COLUMN_NAME_COLOR
-                    ,PassContract.PassEntry.COLUMN_NAME_ACCOUNT
-                    ,PassContract.PassEntry.COLUMN_NAME_PW
-                    ,PassContract.PassEntry.COLUMN_NAME_URL
-                    ,PassContract.PassEntry.COLUMN_NAME_CONTENTS
-                    ,PassContract.PassEntry.COLUMN_NAME_DATE);
+                    , PassContract.PassEntry.TABLE_NAME_NEW
+                    , PassContract.PassEntry._ID
+                    , PassContract.PassEntry.COLUMN_NAME_TITLE
+                    , PassContract.PassEntry.COLUMN_NAME_COLOR
+                    , PassContract.PassEntry.COLUMN_NAME_ACCOUNT
+                    , PassContract.PassEntry.COLUMN_NAME_PW
+                    , PassContract.PassEntry.COLUMN_NAME_URL
+                    , PassContract.PassEntry.COLUMN_NAME_CONTENTS
+                    , PassContract.PassEntry.COLUMN_NAME_DATE);
 
     private static final String SQL_DELETE_ENTRIES =
             "DROP TABLE IF EXISTS " + PassContract.PassEntry.TABLE_NAME;
@@ -54,7 +55,7 @@ public class PassDbHelper extends SQLiteOpenHelper {
             "SELECT * FROM " + PassContract.PassEntry.TABLE_NAME;
 
     public static PassDbHelper getInstance(Context context) {
-        if(sInstance == null) {
+        if (sInstance == null) {
             sInstance = new PassDbHelper(context);
         }
         return sInstance;
@@ -75,7 +76,7 @@ public class PassDbHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    public boolean backupDb(Context context, SQLiteDatabase db) {
+    public boolean backupDb(Context context) {
         try {
             File sd = Environment.getExternalStorageDirectory();
             File data = Environment.getDataDirectory();
@@ -99,13 +100,14 @@ public class PassDbHelper extends SQLiteOpenHelper {
                 File currentDB = new File(data, currentDBPath);
                 File backupDB = new File(sd, backupDBPath);
 
-                FileChannel src = new FileInputStream(currentDB).getChannel();
-                FileChannel dst = new FileOutputStream(backupDB).getChannel();
-                dst.transferFrom(src, 0, src.size());
-                src.close();
-                dst.close();
-                Toast.makeText(context, "백업 성공", Toast.LENGTH_SHORT).show();
-
+                if (currentDB.exists()) {
+                    FileChannel src = new FileInputStream(currentDB).getChannel();
+                    FileChannel dst = new FileOutputStream(backupDB).getChannel();
+                    dst.transferFrom(src, 0, src.size());
+                    src.close();
+                    dst.close();
+                    Toast.makeText(context, "백업 성공", Toast.LENGTH_SHORT).show();
+                }
                 return true;
             }
         } catch (Exception e) {
@@ -131,20 +133,21 @@ public class PassDbHelper extends SQLiteOpenHelper {
                 Log.e(TAG, "currentDBPath : " + currentDBPath);
 
                 String backupDBPath = DB_NAME_BACKUP; // From SD directory.
-//                File backupDB = new File(data, currentDBPath);
-//                File currentDB = new File(sd, backupDBPath);
                 File currentDB = new File(data, currentDBPath);
                 File backupDB = new File(sd, backupDBPath);
 
-                FileChannel src = new FileInputStream(backupDB).getChannel();
-                FileChannel dst = new FileOutputStream(currentDB).getChannel();
-                dst.transferFrom(src, 0, src.size());
-                src.close();
-                dst.close();
-                Toast.makeText(context, "복원 성공", Toast.LENGTH_SHORT).show();
+                if(currentDB.exists()) {
+                    FileChannel src = new FileInputStream(backupDB).getChannel();
+                    FileChannel dst = new FileOutputStream(currentDB).getChannel();
+                    dst.transferFrom(src, 0, src.size());
+                    src.close();
+                    dst.close();
 
-                onUpgrade(db, DB_VERSION,DB_VERSION);
-                onCreate(db);
+                    this.close();
+                    sInstance = null;
+                }
+
+                Toast.makeText(context, "복원 성공", Toast.LENGTH_SHORT).show();
                 return true;
             }
         } catch (Exception e) {

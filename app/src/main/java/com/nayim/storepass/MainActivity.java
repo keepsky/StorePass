@@ -55,10 +55,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mMainView = findViewById(R.id.main_layout);
 
         // TODO: Need to fix for backup and restore
         // Check permission
-        mMainView = findViewById(R.id.main_layout);
         checkPermission();
 //        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 //            if(!Settings.System.canWrite(this)) {
@@ -74,10 +74,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 //        startActivityForResult(new Intent(MainActivity.this, AuthActivity.class), REQUEST_CODE_AUTH);
 
 
-
-        mDbHelper = PassDbHelper.getInstance(this);
-        mDb = mDbHelper.getWritableDatabase();
-
         Toolbar mainToolbar = findViewById(R.id.main_toolbar);
         setSupportActionBar(mainToolbar);
 
@@ -91,12 +87,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             }
         });
 
-        Cursor cursor = getPassCursor();
-        mPassAdapter = new PassCursorAdapter(this, cursor);
-        mListView = findViewById(R.id.pass_list);
-        mListView.setTextFilterEnabled(true);
-        mListView.setAdapter(mPassAdapter);
-
+        openDatabaseAndBindView();
 
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -170,17 +161,12 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                 return true;
 
             case R.id.backup_menu_item:
-
-                if(mDbHelper.backupDb(this, mDb))
-                    Toast.makeText(this, "Success", Toast.LENGTH_SHORT).show();
-                else
-                    Toast.makeText(this, "Fail", Toast.LENGTH_SHORT).show();
-
+                mDbHelper.backupDb(this);
                 return true;
 
             case R.id.restore_menu_item:
-                mDbHelper.restoreDb(this, mDb);
-                mPassAdapter.swapCursor(getPassCursor());
+                if(mDbHelper.restoreDb(this, mDb))
+                    openDatabaseAndBindView();
                 return true;
 
             case R.id.help_menu_item:
@@ -208,6 +194,19 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             // TODO: Need something to refresh list view?
 //            mPassAdapter.notifyDataSetChanged();
         }
+    }
+
+    private void openDatabaseAndBindView(){
+        mListView = findViewById(R.id.pass_list);
+        mListView.setTextFilterEnabled(true);
+        mDbHelper = PassDbHelper.getInstance(this);
+        mDb = mDbHelper.getWritableDatabase();
+
+        Cursor cursor = getPassCursor();
+        Log.e(TAG, "onOptionsItemSelected(): cursor.getCount()=" + cursor.getCount());
+
+        mPassAdapter = new PassCursorAdapter(this, cursor);
+        mListView.setAdapter(mPassAdapter);
     }
 
 
