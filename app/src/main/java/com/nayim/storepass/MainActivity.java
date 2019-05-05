@@ -1,12 +1,8 @@
 package com.nayim.storepass;
 
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.Uri;
-import android.os.Build;
-import android.provider.Settings;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -14,17 +10,11 @@ import android.os.Bundle;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.CursorAdapter;
-import android.widget.Filterable;
-import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.nayim.storepass.auth.AuthActivity;
@@ -82,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
         Cursor cursor = getPassCursor();
         mPassAdapter = new PassCursorAdapter(this, cursor);
         mListView = findViewById(R.id.pass_list);
+        mListView.setTextFilterEnabled(true);
         mListView.setAdapter(mPassAdapter);
 
 
@@ -116,11 +107,11 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         // TODO: Need to fix for backup and restore
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if(Settings.System.canWrite(this)) {
-               Log.d(TAG, "canWrite() : true");
-            }
-        }
+//        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//            if(Settings.System.canWrite(this)) {
+//               Log.d(TAG, "canWrite() : true");
+//            }
+//        }
     }
 
     @Override
@@ -141,11 +132,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onQueryTextChange(String s) {
                 Log.d(TAG, "onQueryTextChange: " + s);
-//                if("".equals(s)) {
-//                    mListView.clearTextFilter();
-//                }
+                if("".equals(s)) {
+                    mListView.clearTextFilter();
+                }
                 return true;
             }
+
         });
 
         return true;
@@ -186,91 +178,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        Log.d(TAG, "requestCode : " + requestCode);
+
         if((requestCode == REQUEST_CODE_INSERT || requestCode == REQUEST_CODE_VIEW )&& resultCode == RESULT_OK) {
-//            mAdaptor.swapCursor(getPassCursor());
+
             mPassAdapter.swapCursor(getPassCursor());
 
-            Log.d(TAG, "requestCode : " + requestCode);
-//            if(data == null) {
-//                return;
-//            }
-
             // TODO: Need something to refresh list view?
-//            Password item = new Password();
-//
-//            item.setTitle(data.getStringExtra(PassContract.PassEntry.COLUMN_NAME_TITLE));
-//            item.setAccount(data.getStringExtra(PassContract.PassEntry.COLUMN_NAME_ACCOUNT));
-//            item.setPw(data.getStringExtra(PassContract.PassEntry.COLUMN_NAME_PW));
-//            item.setUrl(data.getStringExtra(PassContract.PassEntry.COLUMN_NAME_URL));
-//            item.setContents(data.getStringExtra(PassContract.PassEntry.COLUMN_NAME_CONTENTS));
-//            item.setDate(data.getStringExtra(PassContract.PassEntry.COLUMN_NAME_DATE));
-//
-//            int position;
-//
-//            switch(requestCode) {
-//                case REQUEST_CODE_INSERT:
-//                    item.setColor(data.getIntExtra(PassContract.PassEntry.COLUMN_NAME_COLOR, 0xFFFFFF));
-//                    mPassAdapter.insertItem(item);
-//                    break;
-//                case REQUEST_CODE_VIEW:
-//                    position = data.getIntExtra("position", -1);
-//                    mPassAdapter.updateItem(item, position);
-//                    break;
-//            }
-
-            mPassAdapter.notifyDataSetChanged();
+//            mPassAdapter.notifyDataSetChanged();
         }
     }
-
-    // TODO: Change to custom adaptor for filtering feature
-    private static class PassAdaptor extends CursorAdapter implements Filterable {
-
-
-        public PassAdaptor(Context context, Cursor c) {
-            super(context, c, false);
-        }
-
-        @Override
-        public View newView(Context context, Cursor cursor, ViewGroup parent) {
-            return LayoutInflater.from(context)
-                    .inflate(R.layout.item_pass, parent, false);
-        }
-
-        @Override
-        public void bindView(View view, Context context, Cursor cursor) {
-
-            // For initial circle icon
-            ImageView circleImage = view.findViewById(R.id.circle_image);
-
-            // For title
-            TextView itemText = view.findViewById(R.id.title_text);
-            String title = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_TITLE));
-            itemText.setText(title);
-
-            // For url
-            TextView urlText = view.findViewById(R.id.url_text);
-            String url = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_URL));
-            urlText.setText(url);
-
-            // For account
-            TextView accountText = view.findViewById(R.id.account_text);
-            String account = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_ACCOUNT));
-            accountText.setText(account);
-
-            // For initial char of title
-            TextView initialText = view.findViewById(R.id.initial_text);
-            char s = title.charAt(0);
-            initialText.setText(s + "");
-            int color = cursor.getInt(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_COLOR));
-            circleImage.setColorFilter(color);
-
-            // For Date
-            TextView dateText = view.findViewById(R.id.date_text);
-            String date = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_DATE));
-            dateText.setText(date);
-
-        }
-
-    }
-
 }
