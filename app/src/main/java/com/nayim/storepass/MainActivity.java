@@ -2,11 +2,12 @@ package com.nayim.storepass;
 
 import android.Manifest;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+//import android.database.sqlite.SQLiteDatabase;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -33,6 +34,8 @@ import java.io.FileOutputStream;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
+import net.sqlcipher.database.SQLiteDatabase;
+
 
 public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -54,10 +57,12 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     String[] REQUIRED_PERMISSIONS  = {Manifest.permission.WRITE_EXTERNAL_STORAGE};  // 외부 저장소
 
     private PassCursorAdapter mPassAdapter;
-    private PassDbHelper mDbHelper;
-    private SQLiteDatabase mDb;
     private ListView mListView;
     private View mMainView;
+
+//    private PassDbHelper mDbHelper;
+    private PassDbCipherHelper mDbHelper;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -185,8 +190,9 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     }
 
     private Cursor getPassCursor() {
-        PassDbHelper dbHelper = PassDbHelper.getInstance(this);
-        return dbHelper.getReadableDatabase()
+//        PassDbHelper dbHelper = PassDbHelper.getInstance(this);
+        PassDbCipherHelper dbHelper = PassDbCipherHelper.getInstance(this);
+        return dbHelper.getReadableDb()
                 .query(PassContract.PassEntry.TABLE_NAME,
                         null, null, null, null, null, PassContract.PassEntry.COLUMN_NAME_ACCOUNT + " DESC");
     }
@@ -229,9 +235,12 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         AlertDialog alert = alt_bld.create();
         alert.show();
     }
+
     private void openDatabase() {
-        mDbHelper = PassDbHelper.getInstance(this);
-        mDb = mDbHelper.getWritableDatabase();
+        SQLiteDatabase.loadLibs(this);
+//        mDbHelper = PassDbHelper.getInstance(this);
+        mDbHelper = PassDbCipherHelper.getInstance(this);
+        mDbHelper.setPass("1234");
     }
     private void bindViewWithDb() {
         mListView = findViewById(R.id.pass_list);
@@ -334,7 +343,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                     Log.e(TAG, "restoreDatabase(): currentDB.renameTo(orgDB)="+b);
 
                     openDatabase();
-                    putAllPassItems(mDb, passList);
+                    putAllPassItems(mDbHelper.getWritableDb(), passList);
                     bindViewWithDb();
                 }
                 Toast.makeText(this, "복원 성공", Toast.LENGTH_SHORT).show();
@@ -390,7 +399,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     private ArrayList<Password> getAllPassItems() {
         ArrayList<Password> arrayList = new ArrayList<>();
 
-        Cursor cursor = mDbHelper.getReadableDatabase()
+        Cursor cursor = mDbHelper.getReadableDb()
                 .rawQuery("SELECT * FROM "+PassContract.PassEntry.TABLE_NAME, null);
 
         if(cursor.moveToFirst()) {

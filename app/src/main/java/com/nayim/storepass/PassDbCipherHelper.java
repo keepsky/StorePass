@@ -2,14 +2,16 @@ package com.nayim.storepass;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-public class PassDbHelper extends SQLiteOpenHelper {
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteOpenHelper;
 
-    private static final String TAG = "PassDbHelper";
-    private static PassDbHelper sInstance;
+public class PassDbCipherHelper extends SQLiteOpenHelper {
+
+    private static final String TAG = "PassDbCipherHelper";
+    private static PassDbCipherHelper sInstance;
+    private String pw;
 
     public static final int DB_VERSION = 1;
     public static final String DB_NAME = "pass.db";
@@ -46,24 +48,16 @@ public class PassDbHelper extends SQLiteOpenHelper {
     private static final String SQL_GET_ENTRIES =
             "SELECT * FROM " + PassContract.PassEntry.TABLE_NAME;
 
-    public static PassDbHelper getInstance(Context context) {
+    private PassDbCipherHelper(Context context, String name, SQLiteDatabase.CursorFactory factory, int version) {
+        super(context, name, factory, version);
+    }
+
+    public static PassDbCipherHelper getInstance(Context context) {
         if (sInstance == null) {
-            sInstance = new PassDbHelper(context);
+            sInstance = new PassDbCipherHelper(context, DB_NAME, null, DB_VERSION);
         }
         return sInstance;
     }
-
-    public SQLiteDatabase getWritableDb() {
-        return sInstance.getWritableDatabase();
-    }
-    public SQLiteDatabase getReadableDb() {
-        return sInstance.getReadableDatabase();
-    }
-
-    private PassDbHelper(Context context) {
-        super(context, DB_NAME, null, DB_VERSION);
-    }
-
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(SQL_CREATE_ENTRIES);
@@ -75,33 +69,21 @@ public class PassDbHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    private void createDb(SQLiteDatabase db, String tableName) {
-        String query =
-                String.format("CREATE TABLE IF NOT EXISTS %s (%s INTEGER PRIMARY KEY AUTOINCREMENT, %s TEXT, %s BIGINT, %s TEXT, %s TEXT, %s TEXT, %s TEXT, %s DATE)"
-                        ,tableName
-                        ,PassContract.PassEntry._ID
-                        ,PassContract.PassEntry.COLUMN_NAME_TITLE
-                        ,PassContract.PassEntry.COLUMN_NAME_COLOR
-                        ,PassContract.PassEntry.COLUMN_NAME_ACCOUNT
-                        ,PassContract.PassEntry.COLUMN_NAME_PW
-                        ,PassContract.PassEntry.COLUMN_NAME_URL
-                        ,PassContract.PassEntry.COLUMN_NAME_CONTENTS
-                        ,PassContract.PassEntry.COLUMN_NAME_DATE);
-        db.execSQL(query);
+    public void setPass(String pw) {
+        this.pw = pw;
     }
 
-    private void joinDb(SQLiteDatabase db, String tableName) {
-        String query = new StringBuilder()
-                .append("SELECT * FROM ")
-                .append(PassContract.PassEntry.TABLE_NAME + " ")
-                .append("INNER JOIN " + tableName)
-                .toString();
-        db.execSQL(query);
+    public SQLiteDatabase getWritableDb() {
+        return sInstance.getWritableDatabase(pw);
     }
+    public SQLiteDatabase getReadableDb() {
+        return sInstance.getReadableDatabase(pw);
+    }
+
 
     public synchronized Cursor getFilteredCursor(String prefix) {
         Cursor cursor = null;
-        SQLiteDatabase db = this.getReadableDatabase();
+        SQLiteDatabase db = this.getReadableDb();
 
         Log.e(TAG, "getFilteredCursor: Started");
         Log.e(TAG, "getFilteredCursor: prefix="+prefix);
@@ -133,4 +115,5 @@ public class PassDbHelper extends SQLiteOpenHelper {
 
         return cursor;
     }
+
 }

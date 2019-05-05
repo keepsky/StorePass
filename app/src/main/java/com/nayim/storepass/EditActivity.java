@@ -2,7 +2,7 @@ package com.nayim.storepass;
 
 import android.content.ContentValues;
 import android.content.Intent;
-import android.database.sqlite.SQLiteDatabase;
+//import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -16,6 +16,8 @@ import android.widget.Toast;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Random;
+
+import net.sqlcipher.database.SQLiteDatabase;
 
 
 public class EditActivity extends AppCompatActivity {
@@ -146,7 +148,8 @@ public class EditActivity extends AppCompatActivity {
         val.put(PassContract.PassEntry.COLUMN_NAME_DATE, today);
         mPassItem.setDate(today);
 
-        SQLiteDatabase db = PassDbHelper.getInstance(this).getWritableDatabase();
+//        SQLiteDatabase db = PassDbHelper.getInstance(this).getWritableDb();
+        SQLiteDatabase db = PassDbCipherHelper.getInstance(this).getWritableDb();
 
 
         switch(mRequestCode) {

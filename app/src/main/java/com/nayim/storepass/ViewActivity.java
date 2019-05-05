@@ -4,7 +4,7 @@ import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+//import android.database.sqlite.SQLiteDatabase;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -17,6 +17,8 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import net.sqlcipher.database.SQLiteDatabase;
+
 
 
 public class ViewActivity extends AppCompatActivity {
@@ -87,7 +89,8 @@ public class ViewActivity extends AppCompatActivity {
                 builder.setPositiveButton("삭제", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        SQLiteDatabase db = PassDbHelper.getInstance(ViewActivity.this).getWritableDatabase();
+//                        SQLiteDatabase db = PassDbHelper.getInstance(ViewActivity.this).getWritableDatabase();
+                        SQLiteDatabase db = PassDbCipherHelper.getInstance(ViewActivity.this).getWritableDb();
                         int count = db.delete(PassContract.PassEntry.TABLE_NAME,
                                 PassContract.PassEntry._ID + " = " + mPassItem.getId(), null);
                         if(count == 0){

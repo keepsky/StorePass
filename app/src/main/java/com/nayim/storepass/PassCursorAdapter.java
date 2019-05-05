@@ -18,12 +18,14 @@ public class PassCursorAdapter extends CursorAdapter implements Filterable {
     private static final String TAG = "PassCursorAdapter";
 
     private Context context;
-    private PassDbHelper dbHelper;
+//    private PassDbHelper dbHelper;
+    private PassDbCipherHelper dbHelper;
 
     public PassCursorAdapter(Context context, Cursor c) {
         super(context, c, false);
         this.context = context;
-        dbHelper = PassDbHelper.getInstance(context);
+//        dbHelper = PassDbHelper.getInstance(context);
+        dbHelper = PassDbCipherHelper.getInstance(context);
     }
 
     @Override
