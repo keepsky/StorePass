@@ -16,6 +16,7 @@ public final class PassContract {
 
     public static class PassEntry implements BaseColumns {
         public static final String TABLE_NAME = "pass";
+        public static final String TABLE_NAME_NEW = "pass_new";
         public static final String COLUMN_NAME_COLOR = "color";
         public static final String COLUMN_NAME_TITLE = "title";
         public static final String COLUMN_NAME_ACCOUNT = "account";

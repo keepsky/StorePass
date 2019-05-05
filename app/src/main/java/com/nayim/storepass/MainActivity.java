@@ -1,10 +1,16 @@
 package com.nayim.storepass;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.SearchView;
@@ -17,28 +23,43 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.nayim.storepass.auth.AuthActivity;
+import java.io.Serializable;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
+
+    private static final String TAG = "MainActivity";
+
+    public static final String PASSWORD_DAO = "passDao";
+    public static final String REQUEST_TYPE = "request_type";
 
     public static final int REQUEST_CODE_INSERT = 1000;
     public static final int REQUEST_CODE_EDIT = 1001;
     public static final int REQUEST_CODE_VIEW = 1002;
     public static final int REQUEST_CODE_AUTH = 1003;
-    private static final String TAG = "MainActivity";
+
+    // onRequestPermissionsResult에서 수신된 결과에서 ActivityCompat.requestPermissions를 사용한 퍼미션 요청을 구별하기 위해 사용됩니다.
+    private static final int PERMISSIONS_REQUEST_CODE = 100;
+
+
+    // 앱을 실행하기 위해 필요한 퍼미션을 정의합니다.
+    String[] REQUIRED_PERMISSIONS  = {Manifest.permission.WRITE_EXTERNAL_STORAGE};  // 외부 저장소
 
     private PassCursorAdapter mPassAdapter;
     private PassDbHelper mDbHelper;
     private SQLiteDatabase mDb;
     private ListView mListView;
+    private View mMainView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
         // TODO: Need to fix for backup and restore
         // Check permission
+        mMainView = findViewById(R.id.main_layout);
+        checkPermission();
 //        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 //            if(!Settings.System.canWrite(this)) {
 //                Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
@@ -47,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
 //                startActivity(intent);
 //            }
 //        }
+
 
         // TODO: Implement authentication feature
 //        startActivityForResult(new Intent(MainActivity.this, AuthActivity.class), REQUEST_CODE_AUTH);
@@ -64,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, EditActivity.class);
-                intent.putExtra("type", REQUEST_CODE_INSERT);
+                intent.putExtra(REQUEST_TYPE, REQUEST_CODE_INSERT);
                 startActivityForResult(intent, REQUEST_CODE_INSERT);
             }
         });
@@ -82,19 +104,17 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(MainActivity.this, ViewActivity.class);
                 Cursor cursor = (Cursor) mPassAdapter.getItem(position);
 
-                String title = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_TITLE));
-                String account = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_ACCOUNT));
-                String pw = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_PW));
-                String url = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_URL));
-                String contents = cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_CONTENTS));
+                Password item = new Password(id,
+                        cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_TITLE)),
+                        cursor.getInt(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_COLOR)),
+                        cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_ACCOUNT)),
+                        cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_PW)),
+                        cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_URL)),
+                        cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_CONTENTS)),
+                        cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_DATE)));
 
-                intent.putExtra("type", REQUEST_CODE_VIEW);
-                intent.putExtra("id", id);
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_TITLE, title);
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_ACCOUNT, account);
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_PW, pw);
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_URL, url);
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_CONTENTS, contents);
+                intent.putExtra(REQUEST_TYPE, REQUEST_CODE_VIEW);
+                intent.putExtra(PASSWORD_DAO, item);
 
                 startActivityForResult(intent, REQUEST_CODE_VIEW);
             }
@@ -151,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
 
             case R.id.backup_menu_item:
 
-                if(mDbHelper.onBackup(this, mDb))
+                if(mDbHelper.backupDb(this, mDb))
                     Toast.makeText(this, "Success", Toast.LENGTH_SHORT).show();
                 else
                     Toast.makeText(this, "Fail", Toast.LENGTH_SHORT).show();
@@ -159,7 +179,8 @@ public class MainActivity extends AppCompatActivity {
                 return true;
 
             case R.id.restore_menu_item:
-                mDbHelper.onRestore(this, mDb);
+                mDbHelper.restoreDb(this, mDb);
+                mPassAdapter.swapCursor(getPassCursor());
                 return true;
 
             case R.id.help_menu_item:
@@ -186,6 +207,87 @@ public class MainActivity extends AppCompatActivity {
 
             // TODO: Need something to refresh list view?
 //            mPassAdapter.notifyDataSetChanged();
+        }
+    }
+
+
+    private void checkPermission() {
+        int writeExtStoragePermission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        if(writeExtStoragePermission == PackageManager.PERMISSION_GRANTED) {
+
+        } else {
+            // 3-1. 사용자가 퍼미션 거부를 한 적이 있는 경우에는
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, REQUIRED_PERMISSIONS[0])) {
+
+                // 3-2. 요청을 진행하기 전에 사용자가에게 퍼미션이 필요한 이유를 설명해줄 필요가 있습니다.
+                Snackbar.make(mMainView, "이 앱을 실행하려면 외부저장소 접근 권한이 필요합니다.",
+                        Snackbar.LENGTH_INDEFINITE).setAction("확인", new View.OnClickListener() {
+
+                    @Override
+                    public void onClick(View view) {
+
+                        // 3-3. 사용자게에 퍼미션 요청을 합니다. 요청 결과는 onRequestPermissionResult에서 수신됩니다.
+                        ActivityCompat.requestPermissions( MainActivity.this, REQUIRED_PERMISSIONS,
+                                PERMISSIONS_REQUEST_CODE);
+                    }
+                }).show();
+
+
+            } else {
+                // 4-1. 사용자가 퍼미션 거부를 한 적이 없는 경우에는 퍼미션 요청을 바로 합니다.
+                // 요청 결과는 onRequestPermissionResult에서 수신됩니다.
+                ActivityCompat.requestPermissions( this, REQUIRED_PERMISSIONS,
+                        PERMISSIONS_REQUEST_CODE);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        // 요청 코드가 PERMISSIONS_REQUEST_CODE 이고, 요청한 퍼미션 개수만큼 수신되었다면
+        if ( requestCode == PERMISSIONS_REQUEST_CODE && grantResults.length == REQUIRED_PERMISSIONS.length) {
+            boolean check_result = true;
+
+            // 모든 퍼미션을 허용했는지 체크합니다.
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    check_result = false;
+                    break;
+                }
+            }
+
+            if ( check_result ) {
+            } else {
+                // 거부한 퍼미션이 있다면 앱을 사용할 수 없는 이유를 설명해주고 앱을 종료합니다.2 가지 경우가 있습니다.
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, REQUIRED_PERMISSIONS[0])) {
+
+                    // 사용자가 거부만 선택한 경우에는 앱을 다시 실행하여 허용을 선택하면 앱을 사용할 수 있습니다.
+                    Snackbar.make(mMainView, "퍼미션이 거부되었습니다. 앱을 다시 실행하여 퍼미션을 허용해주세요. ",
+                            Snackbar.LENGTH_INDEFINITE).setAction("확인", new View.OnClickListener() {
+
+                        @Override
+                        public void onClick(View view) {
+
+                            finish();
+                        }
+                    }).show();
+
+                }else {
+
+                    // “다시 묻지 않음”을 사용자가 체크하고 거부를 선택한 경우에는 설정(앱 정보)에서 퍼미션을 허용해야 앱을 사용할 수 있습니다.
+                    Snackbar.make(mMainView, "퍼미션이 거부되었습니다. 설정(앱 정보)에서 퍼미션을 허용해야 합니다. ",
+                            Snackbar.LENGTH_INDEFINITE).setAction("확인", new View.OnClickListener() {
+
+                        @Override
+                        public void onClick(View view) {
+
+                            finish();
+                        }
+                    }).show();
+                }
+            }
         }
     }
 }

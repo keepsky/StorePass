@@ -3,6 +3,7 @@ package com.nayim.storepass;
 import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
@@ -17,6 +18,7 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 
+
 public class ViewActivity extends AppCompatActivity {
 
     private static final String TAG = "ViewActivity";
@@ -28,13 +30,9 @@ public class ViewActivity extends AppCompatActivity {
     private EditText mUrlEditText;
     private EditText mContentsEditText;
 
-    private int mPosition;
-    private long mPassId;
-    private String mTitle;
-    private String mAccount;
-    private String mPw;
-    private String mUrl;
-    private String mContents;
+//    private int mPosition;
+//    private long mPassId;
+    Password mPassItem;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,19 +50,16 @@ public class ViewActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         if(intent != null) {
-            mPassId = intent.getLongExtra("id", -1);
-            mPosition = intent.getIntExtra("position", -1);
-            mTitle = intent.getStringExtra(PassContract.PassEntry.COLUMN_NAME_TITLE);
-            mAccount = intent.getStringExtra(PassContract.PassEntry.COLUMN_NAME_ACCOUNT);
-            mPw = intent.getStringExtra(PassContract.PassEntry.COLUMN_NAME_PW);
-            mUrl = intent.getStringExtra(PassContract.PassEntry.COLUMN_NAME_URL);
-            mContents = intent.getStringExtra(PassContract.PassEntry.COLUMN_NAME_CONTENTS);
+            mPassItem = (Password) intent.getSerializableExtra(MainActivity.PASSWORD_DAO);
 
-            mTitleEditText.setText(mTitle);
-            mAccountEditText.setText(mAccount);
-            mPwEditText.setText(mPw);
-            mUrlEditText.setText(mUrl);
-            mContentsEditText.setText(mContents);
+//            mPassId = intent.getLongExtra("id", -1);
+//            mPosition = intent.getIntExtra("position", -1);
+
+            mTitleEditText.setText(mPassItem.getTitle());
+            mAccountEditText.setText(mPassItem.getAccount());
+            mPwEditText.setText(mPassItem.getPw());
+            mUrlEditText.setText(mPassItem.getUrl());
+            mContentsEditText.setText(mPassItem.getContents());
         }
 
     }
@@ -80,16 +75,8 @@ public class ViewActivity extends AppCompatActivity {
         switch(item.getItemId()){
             case R.id.edit_menu_item:
                 Intent intent = new Intent(ViewActivity.this, EditActivity.class);
-
-                intent.putExtra("type", MainActivity.REQUEST_CODE_EDIT);
-                intent.putExtra("id", mPassId);
-                intent.putExtra("position", mPosition);
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_TITLE, mTitle);
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_ACCOUNT, mAccount);
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_PW, mPw);
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_URL, mUrl);
-                intent.putExtra(PassContract.PassEntry.COLUMN_NAME_CONTENTS, mContents);
-
+                intent.putExtra(MainActivity.REQUEST_TYPE, MainActivity.REQUEST_CODE_EDIT);
+                intent.putExtra(MainActivity.PASSWORD_DAO, mPassItem);
                 startActivityForResult(intent, MainActivity.REQUEST_CODE_EDIT);
                 return true;
 
@@ -102,7 +89,7 @@ public class ViewActivity extends AppCompatActivity {
                     public void onClick(DialogInterface dialog, int which) {
                         SQLiteDatabase db = PassDbHelper.getInstance(ViewActivity.this).getWritableDatabase();
                         int count = db.delete(PassContract.PassEntry.TABLE_NAME,
-                                PassContract.PassEntry._ID + " = " + mPassId, null);
+                                PassContract.PassEntry._ID + " = " + mPassItem.getId(), null);
                         if(count == 0){
                             Toast.makeText(ViewActivity.this, "삭제 실패", Toast.LENGTH_SHORT).show();
                         } else {
@@ -130,23 +117,13 @@ public class ViewActivity extends AppCompatActivity {
         if(requestCode == MainActivity.REQUEST_CODE_EDIT && resultCode == RESULT_OK) {
             Intent intent = getIntent();
             if(intent != null) {
-                mPassId = data.getLongExtra("id", -1);
-                mTitle = data.getStringExtra(PassContract.PassEntry.COLUMN_NAME_TITLE);
-                mAccount = data.getStringExtra(PassContract.PassEntry.COLUMN_NAME_ACCOUNT);
-                mPw = data.getStringExtra(PassContract.PassEntry.COLUMN_NAME_PW);
-                mUrl = data.getStringExtra(PassContract.PassEntry.COLUMN_NAME_URL);
-                mContents = data.getStringExtra(PassContract.PassEntry.COLUMN_NAME_CONTENTS);
+                mPassItem = (Password) data.getSerializableExtra(MainActivity.PASSWORD_DAO);
 
-
-                Log.e(TAG, "mTitle = " + mTitle);
-                Log.e(TAG, "mAccount = " + mAccount);
-
-
-                mTitleEditText.setText(mTitle);
-                mAccountEditText.setText(mAccount);
-                mPwEditText.setText(mPw);
-                mUrlEditText.setText(mUrl);
-                mContentsEditText.setText(mContents);
+                mTitleEditText.setText(mPassItem.getTitle());
+                mAccountEditText.setText(mPassItem.getAccount());
+                mPwEditText.setText(mPassItem.getPw());
+                mUrlEditText.setText(mPassItem.getUrl());
+                mContentsEditText.setText(mPassItem.getContents());
             }
         }
     }

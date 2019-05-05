@@ -20,11 +20,24 @@ public class PassDbHelper extends SQLiteOpenHelper {
 
     private static final int DB_VERSION = 1;
     private static final String DB_NAME = "pass.db";
+    private static final String DB_NAME_NEW = "pass_new.db";
     private static final String DB_PATH = "/data/data/PACKAGE/databases/";
-    private static final String DB_BACKUP_NAME = "mypass.backup";
+    private static final String DB_NAME_BACKUP = "mypass.backup";
     private static final String SQL_CREATE_ENTRIES =
-            String.format("CREATE TABLE %s (%s INTEGER PRIMARY KEY AUTOINCREMENT, %s TEXT, %s BIGINT, %s TEXT, %s TEXT, %s TEXT, %s TEXT, %s DATE)"
+            String.format("CREATE TABLE IF NOT EXISTS %s (%s INTEGER PRIMARY KEY AUTOINCREMENT, %s TEXT, %s BIGINT, %s TEXT, %s TEXT, %s TEXT, %s TEXT, %s DATE)"
                     ,PassContract.PassEntry.TABLE_NAME
+                    ,PassContract.PassEntry._ID
+                    ,PassContract.PassEntry.COLUMN_NAME_TITLE
+                    ,PassContract.PassEntry.COLUMN_NAME_COLOR
+                    ,PassContract.PassEntry.COLUMN_NAME_ACCOUNT
+                    ,PassContract.PassEntry.COLUMN_NAME_PW
+                    ,PassContract.PassEntry.COLUMN_NAME_URL
+                    ,PassContract.PassEntry.COLUMN_NAME_CONTENTS
+                    ,PassContract.PassEntry.COLUMN_NAME_DATE);
+
+    private static final String SQL_CREATE_NEW_ENTRIES =
+            String.format("CREATE TABLE %s (%s INTEGER PRIMARY KEY AUTOINCREMENT, %s TEXT, %s BIGINT, %s TEXT, %s TEXT, %s TEXT, %s TEXT, %s DATE)"
+                    ,PassContract.PassEntry.TABLE_NAME_NEW
                     ,PassContract.PassEntry._ID
                     ,PassContract.PassEntry.COLUMN_NAME_TITLE
                     ,PassContract.PassEntry.COLUMN_NAME_COLOR
@@ -62,7 +75,7 @@ public class PassDbHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    public boolean onBackup(Context context, SQLiteDatabase db) {
+    public boolean backupDb(Context context, SQLiteDatabase db) {
         try {
             File sd = Environment.getExternalStorageDirectory();
             File data = Environment.getDataDirectory();
@@ -78,9 +91,11 @@ public class PassDbHelper extends SQLiteOpenHelper {
                         .append(DB_NAME)
                         .toString();
 
-                Log.e(TAG, "currentDBPath : " + currentDBPath);
+                String backupDBPath = DB_NAME_BACKUP;
 
-                String backupDBPath = DB_BACKUP_NAME;
+                Log.e(TAG, "currentDBPath : " + currentDBPath);
+                Log.e(TAG, "backupDBPath : " + backupDBPath);
+
                 File currentDB = new File(data, currentDBPath);
                 File backupDB = new File(sd, backupDBPath);
 
@@ -101,7 +116,7 @@ public class PassDbHelper extends SQLiteOpenHelper {
         return false;
     }
 
-    public boolean onRestore(Context context, SQLiteDatabase db) {
+    public boolean restoreDb(Context context, SQLiteDatabase db) {
         try {
             File sd = Environment.getExternalStorageDirectory();
             File data = Environment.getDataDirectory();
@@ -115,16 +130,18 @@ public class PassDbHelper extends SQLiteOpenHelper {
 
                 Log.e(TAG, "currentDBPath : " + currentDBPath);
 
-                String backupDBPath = DB_BACKUP_NAME; // From SD directory.
-                File backupDB = new File(data, currentDBPath);
-                File currentDB = new File(sd, backupDBPath);
+                String backupDBPath = DB_NAME_BACKUP; // From SD directory.
+//                File backupDB = new File(data, currentDBPath);
+//                File currentDB = new File(sd, backupDBPath);
+                File currentDB = new File(data, currentDBPath);
+                File backupDB = new File(sd, backupDBPath);
 
                 FileChannel src = new FileInputStream(backupDB).getChannel();
                 FileChannel dst = new FileOutputStream(currentDB).getChannel();
                 dst.transferFrom(src, 0, src.size());
                 src.close();
                 dst.close();
-                Toast.makeText(context, "Import Successful!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "복원 성공", Toast.LENGTH_SHORT).show();
 
                 onUpgrade(db, DB_VERSION,DB_VERSION);
                 onCreate(db);
@@ -132,7 +149,7 @@ public class PassDbHelper extends SQLiteOpenHelper {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(context, "Import Failed!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "복원 실패", Toast.LENGTH_SHORT).show();
 
         }
         return false;

@@ -2,6 +2,8 @@ package com.nayim.storepass;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.support.annotation.NonNull;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -65,15 +67,11 @@ public class PassCursorAdapter extends CursorAdapter implements Filterable {
 
     @Override
     public CharSequence convertToString(Cursor cursor) {
-//        return super.convertToString(cursor);
-
         return cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_TITLE));
     }
 
     @Override
     public Cursor runQueryOnBackgroundThread(CharSequence constraint) {
-//        return super.runQueryOnBackgroundThread(constraint);
-
         Log.e(TAG, "runQueryOnBackgroundThread: Started");
         if(getFilterQueryProvider() != null) {
             return getFilterQueryProvider().runQuery(constraint);
@@ -87,5 +85,12 @@ public class PassCursorAdapter extends CursorAdapter implements Filterable {
         Log.e(TAG, "runQueryOnBackgroundThread: filter=[" + filter + "]");
 
         return dbHelper.getFilteredCursor(filter);
+    }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+        }
     }
 }

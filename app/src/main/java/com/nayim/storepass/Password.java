@@ -1,7 +1,10 @@
 package com.nayim.storepass;
 
-public class Password {
+import java.io.Serializable;
 
+public class Password implements Serializable {
+
+    long id;
     String title;
     int color;
     String account;
@@ -13,7 +16,8 @@ public class Password {
     public Password() {
     }
 
-    public Password(String title, int color, String account, String pw, String url, String contents, String date) {
+    public Password(long id, String title, int color, String account, String pw, String url, String contents, String date) {
+        this.id = id;
         this.title = title;
         this.color = color;
         this.account = account;
@@ -21,6 +25,14 @@ public class Password {
         this.url = url;
         this.contents = contents;
         this.date = date;
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     public String getTitle() {
