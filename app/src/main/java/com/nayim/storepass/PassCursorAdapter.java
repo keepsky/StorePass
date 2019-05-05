@@ -2,6 +2,7 @@ package com.nayim.storepass;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +12,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 public class PassCursorAdapter extends CursorAdapter implements Filterable {
+
+    private static final String TAG = "PassCursorAdapter";
 
     private Context context;
     private PassDbHelper dbHelper;
@@ -70,14 +73,18 @@ public class PassCursorAdapter extends CursorAdapter implements Filterable {
     @Override
     public Cursor runQueryOnBackgroundThread(CharSequence constraint) {
 //        return super.runQueryOnBackgroundThread(constraint);
+
+        Log.e(TAG, "runQueryOnBackgroundThread: Started");
         if(getFilterQueryProvider() != null) {
             return getFilterQueryProvider().runQuery(constraint);
         }
+        Log.e(TAG, "runQueryOnBackgroundThread: getFilterQueryProvider() is null");
 
         String filter = "";
         if(constraint != null) {
             filter = constraint.toString();
         }
+        Log.e(TAG, "runQueryOnBackgroundThread: filter=[" + filter + "]");
 
         return dbHelper.getFilteredCursor(filter);
     }

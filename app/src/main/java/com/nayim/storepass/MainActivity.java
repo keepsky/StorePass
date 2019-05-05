@@ -102,17 +102,17 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        // TODO: Need to fix for backup and restore
+//    @Override
+//    protected void onResume() {
+//        super.onResume();
+//
+//        // TODO: Need to fix for backup and restore
 //        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 //            if(Settings.System.canWrite(this)) {
 //               Log.d(TAG, "canWrite() : true");
 //            }
 //        }
-    }
+//    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -122,10 +122,7 @@ public class MainActivity extends AppCompatActivity {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String s) {
-                Toast.makeText(MainActivity.this, s, Toast.LENGTH_SHORT).show();
-
-                // TODO: Need to fix search feature
-                mListView.setFilterText(s);
+                Log.d(TAG, "onQueryTextSubmit, s=[" + s + "]");
                 return true;
             }
 
@@ -134,6 +131,9 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "onQueryTextChange: " + s);
                 if("".equals(s)) {
                     mListView.clearTextFilter();
+//                    mPassAdapter.swapCursor(getPassCursor());
+                } else if (s.length() >= 2){
+                    mListView.setFilterText(s);
                 }
                 return true;
             }

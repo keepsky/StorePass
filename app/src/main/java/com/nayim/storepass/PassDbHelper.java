@@ -3,7 +3,6 @@ package com.nayim.storepass;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Environment;
 import android.util.Log;
@@ -12,11 +11,7 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
 
 public class PassDbHelper extends SQLiteOpenHelper {
 
@@ -65,25 +60,6 @@ public class PassDbHelper extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL(SQL_DELETE_ENTRIES);
         onCreate(db);
-    }
-
-    public void makePassList(ArrayList<Password> data) {
-//        ArrayList<Password> data = new ArrayList<>();
-        SQLiteDatabase db = this.getWritableDatabase();
-
-        Cursor cursor = db.rawQuery(SQL_GET_ENTRIES, null);
-        Password item = null;
-        if(cursor.moveToFirst()) {
-            do {
-                item = new Password();
-                item.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_TITLE)));
-                item.setColor(cursor.getInt(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_COLOR)));
-                item.setAccount(cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_ACCOUNT)));
-                item.setUrl(cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_URL)));
-                item.setDate(cursor.getString(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_DATE)));
-                data.add(item);
-            } while (cursor.moveToNext());
-        }
     }
 
     public boolean onBackup(Context context, SQLiteDatabase db) {
@@ -164,27 +140,33 @@ public class PassDbHelper extends SQLiteOpenHelper {
 
     public synchronized Cursor getFilteredCursor(String prefix) {
         Cursor cursor = null;
-        SQLiteDatabase db = sInstance.getReadableDatabase();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        Log.e(TAG, "getFilteredCursor: Started");
+        Log.e(TAG, "getFilteredCursor: prefix="+prefix);
 
         if(prefix.compareTo("") == 0){
             cursor = db.query(PassContract.PassEntry.TABLE_NAME,
-                    new String[]{PassContract.PassEntry.COLUMN_NAME_TITLE},
-                    PassContract.PassEntry.COLUMN_NAME_TITLE + " like '' || ? || '%'",
-                    new String[]{"*"},
+                    null, //new String[]{PassContract.PassEntry.COLUMN_NAME_TITLE},
                     null,
                     null,
-                    null);
+                    null,
+                    null,
+                    PassContract.PassEntry.COLUMN_NAME_ACCOUNT + " DESC");
+            Log.e(TAG, "getFilteredCursor: null prefix, cursor.getCount()="+cursor.getCount());
         } else {
             cursor = db.query(PassContract.PassEntry.TABLE_NAME,
-                    new String[]{PassContract.PassEntry.COLUMN_NAME_TITLE},
+                    null, //new String[]{PassContract.PassEntry.COLUMN_NAME_TITLE},
                     PassContract.PassEntry.COLUMN_NAME_TITLE + " like '' || ? || '%'",
                     new String[]{prefix},
                     null,
                     null,
-                    null);
+                    PassContract.PassEntry.COLUMN_NAME_ACCOUNT + " DESC");
+            Log.e(TAG, "getFilteredCursor: cursor.getCount()="+cursor.getCount());
         }
 
         if(cursor == null || cursor.getCount() <=0) {
+            Log.e(TAG, "getFilteredCursor: fail, cursor.getCount()="+cursor.getCount());
             new Exception("Cursor " + (cursor==null?"null":"fill with wrong data"));
         }
 
