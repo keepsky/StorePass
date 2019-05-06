@@ -198,6 +198,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()) {
             case R.id.setting_menu_item:
+                startActivity(new Intent(this, SettingActivity.class));
                 return true;
 
             case R.id.backup_menu_item:
