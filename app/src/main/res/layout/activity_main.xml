@@ -20,7 +20,8 @@
             android:background="@color/colorPrimary"
             android:elevation="4dp"
             android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
-            app:popupTheme="@style/Theme.AppCompat.DayNight.DarkActionBar" />
+            app:popupTheme="@style/Theme.AppCompat.DayNight.DarkActionBar"
+            app:titleTextColor="#FFFFFF" />
 
         <ListView
             android:id="@+id/pass_list"

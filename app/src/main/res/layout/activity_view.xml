@@ -14,7 +14,8 @@
         android:background="@color/colorPrimary"
         android:elevation="4dp"
         android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
-        app:popupTheme="@style/Theme.AppCompat.DayNight.DarkActionBar">
+        app:popupTheme="@style/Theme.AppCompat.DayNight.DarkActionBar"
+        app:titleTextColor="#FFFFFF" >
 
     </android.support.v7.widget.Toolbar>
 
@@ -59,7 +60,7 @@
         android:layout_height="wrap_content"
         android:paddingHorizontal="20dp"
         android:paddingTop="10dp"
-        android:text="암호"
+        android:text="비밀번호"
         android:textColor="#1C4111"
         android:textStyle="bold" />
     <EditText
@@ -77,7 +78,7 @@
         android:layout_height="wrap_content"
         android:paddingHorizontal="20dp"
         android:paddingTop="10dp"
-        android:text="주소"
+        android:text="홈페이지"
         android:textColor="#1C4111"
         android:textStyle="bold" />
     <EditText

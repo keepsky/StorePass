@@ -16,7 +16,6 @@ import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import java.util.ArrayList;
 import net.sqlcipher.database.SQLiteDatabase;
 
 
@@ -31,9 +30,8 @@ public class ViewActivity extends AppCompatActivity {
     private EditText mPwEditText;
     private EditText mUrlEditText;
     private EditText mContentsEditText;
+    private Toolbar mToolbar;
 
-//    private int mPosition;
-//    private long mPassId;
     Password mPassItem;
 
     @Override
@@ -41,9 +39,7 @@ public class ViewActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_view);
 
-        Toolbar viewToolbar = findViewById(R.id.view_toolbar);
-        setSupportActionBar(viewToolbar);
-
+        mToolbar = findViewById(R.id.view_toolbar);
         mTitleEditText = findViewById(R.id.title_edit);
         mAccountEditText = findViewById(R.id.account_edit);
         mPwEditText = findViewById(R.id.pw_edit);
@@ -54,15 +50,18 @@ public class ViewActivity extends AppCompatActivity {
         if(intent != null) {
             mPassItem = (Password) intent.getSerializableExtra(MainActivity.PASSWORD_DAO);
 
-//            mPassId = intent.getLongExtra("id", -1);
-//            mPosition = intent.getIntExtra("position", -1);
-
             mTitleEditText.setText(mPassItem.getTitle());
             mAccountEditText.setText(mPassItem.getAccount());
             mPwEditText.setText(mPassItem.getPw());
             mUrlEditText.setText(mPassItem.getUrl());
             mContentsEditText.setText(mPassItem.getContents());
+        } else {
+            setResult(RESULT_CANCELED);
+            finish();
         }
+
+        mToolbar.setTitle(mPassItem.getTitle());
+        setSupportActionBar(mToolbar);
 
     }
 

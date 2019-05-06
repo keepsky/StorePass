@@ -29,8 +29,8 @@ public class EditActivity extends AppCompatActivity {
     private EditText mPwEditText;
     private EditText mUrlEditText;
     private EditText mContentsEditText;
+    private Toolbar mToolBar;
 
-//    private long mPassId;
     private int mRequestCode;
     private Password mPassItem;
 
@@ -39,8 +39,7 @@ public class EditActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit);
 
-        Toolbar editToolbar = findViewById(R.id.edit_toolbar);
-        setSupportActionBar(editToolbar);
+        mToolBar = findViewById(R.id.edit_toolbar);
 
         mTitleEditText = findViewById(R.id.title_edit);
         mAccountEditText = findViewById(R.id.account_edit);
@@ -61,9 +60,11 @@ public class EditActivity extends AppCompatActivity {
                     mPwEditText.setText(mPassItem.getPw());
                     mUrlEditText.setText(mPassItem.getUrl());
                     mContentsEditText.setText(mPassItem.getContents());
+                    mToolBar.setTitle(mPassItem.getTitle() + " 수정");
                     break;
 
                 case MainActivity.REQUEST_CODE_INSERT:
+                    mToolBar.setTitle("신규 추가");
                     break;
 
                 default:
@@ -71,6 +72,8 @@ public class EditActivity extends AppCompatActivity {
                     break;
             }
         }
+
+        setSupportActionBar(mToolBar);
     }
 
 

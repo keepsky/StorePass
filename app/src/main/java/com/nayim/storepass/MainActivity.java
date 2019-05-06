@@ -2,7 +2,6 @@ package com.nayim.storepass;
 
 import android.Manifest;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -28,6 +27,8 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.nayim.storepass.auth.AuthActivity;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -49,6 +50,9 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     public static final int REQUEST_CODE_VIEW = 1002;
     public static final int REQUEST_CODE_AUTH = 1003;
 
+    public static final int REQUEST_CODE_SIGNIN = 2000;
+    public static final int REQUEST_CODE_LOGIN = 2001;
+
     // onRequestPermissionsResult에서 수신된 결과에서 ActivityCompat.requestPermissions를 사용한 퍼미션 요청을 구별하기 위해 사용됩니다.
     private static final int PERMISSIONS_REQUEST_CODE = 100;
 
@@ -59,37 +63,61 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     private PassCursorAdapter mPassAdapter;
     private ListView mListView;
     private View mMainView;
+    PassSetting mSetting;
 
 //    private PassDbHelper mDbHelper;
     private PassDbCipherHelper mDbHelper;
-
+    private boolean mLoginOkay;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        Log.d(TAG, "================>onCreate:");
+
         mMainView = findViewById(R.id.main_layout);
+
+        // TODO: get password
+        mLoginOkay = false;
+        mSetting = PassSetting.getInstance(this);
+        if(mSetting.getIntSetting(PassSetting.KEY_ACCOUNT) == PassSetting.ACCOUNT_NO) {
+            Intent intent = new Intent(this, StartActivity.class);
+            intent.putExtra(StartActivity.TYPE, StartActivity.SIGNIN);
+            startActivityForResult(intent, REQUEST_CODE_SIGNIN);
+
+        } else if(mSetting.getIntSetting(PassSetting.KEY_LOCK_TYPE) == PassSetting.LOCK_TYPE_FINGER){
+            startActivityForResult(new Intent(this, AuthActivity.class), REQUEST_CODE_AUTH);
+        } else {
+            Intent intent = new Intent(this, StartActivity.class);
+            intent.putExtra(StartActivity.TYPE, StartActivity.LOGIN);
+            intent.putExtra(StartActivity.PASS, mSetting.getTextSetting(PassSetting.KEY_PASSWORD));
+            startActivityForResult(intent, REQUEST_CODE_LOGIN);
+        }
+
+        onPause();
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "================>onResume:");
+
+
+        if(!mLoginOkay)
+            return;
+
+        Toolbar mainToolbar = findViewById(R.id.main_toolbar);
+        setSupportActionBar(mainToolbar);
 
         // TODO: Need to fix for backup and restore
         // Check permission
         checkPermission();
-//        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            if(!Settings.System.canWrite(this)) {
-//                Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
-//                intent.setData(Uri.parse("package:" + this.getPackageName()));
-//                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//                startActivity(intent);
-//            }
-//        }
 
 
-        // TODO: Implement authentication feature
-//        startActivityForResult(new Intent(MainActivity.this, AuthActivity.class), REQUEST_CODE_AUTH);
-
-
-        Toolbar mainToolbar = findViewById(R.id.main_toolbar);
-        setSupportActionBar(mainToolbar);
+        openDatabase();
+        bindViewWithDb();
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -100,9 +128,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                 startActivityForResult(intent, REQUEST_CODE_INSERT);
             }
         });
-
-        openDatabase();
-        bindViewWithDb();
 
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -126,19 +151,19 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             }
         });
 
+
+        // Re-draw view
+        mPassAdapter.swapCursor(getPassCursor());
     }
 
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-//
-//        // TODO: Need to fix for backup and restore
-//        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            if(Settings.System.canWrite(this)) {
-//               Log.d(TAG, "canWrite() : true");
-//            }
-//        }
-//    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "================>onPause:");
+
+        // TODO: release resouces like cursor objects and save something
+//        mDbHelper.close();
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -200,23 +225,49 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Log.d(TAG, "requestCode : " + requestCode);
 
-        if((requestCode == REQUEST_CODE_INSERT || requestCode == REQUEST_CODE_VIEW )&& resultCode == RESULT_OK) {
+        Log.d(TAG, "onActivityResult() : requestCode=" + requestCode + "resultCode="+resultCode);
 
-            mPassAdapter.swapCursor(getPassCursor());
+        switch(requestCode) {
+            case REQUEST_CODE_INSERT:
+            case REQUEST_CODE_EDIT:
+            case REQUEST_CODE_VIEW:
+                break;
 
-            // TODO: Need something to refresh list view?
-//            mPassAdapter.notifyDataSetChanged();
+            case REQUEST_CODE_AUTH:
+                mLoginOkay = true;
+
+                break;
+
+            case REQUEST_CODE_SIGNIN:
+                if(resultCode != RESULT_OK) {
+                    finish();
+                    break;
+                }
+                mSetting.setIntSetting(PassSetting.KEY_ACCOUNT, PassSetting.ACCOUNT_YES);
+                mSetting.setTextSetting(PassSetting.KEY_PASSWORD, data.getStringExtra(StartActivity.PASS));
+                mLoginOkay = true;
+                break;
+
+            case REQUEST_CODE_LOGIN:
+                if(resultCode != RESULT_OK) {
+                    finish();
+                    break;
+                }
+                mLoginOkay = true;
+                break;
+
+            default:
+                break;
         }
     }
 
     private void restoreDialog() {
-        final CharSequence[] PhoneModels = {"교체", "병합", "취소"};
+        final CharSequence[] backupMethods = {"교체", "병합", "취소"};
         AlertDialog.Builder alt_bld = new AlertDialog.Builder(this);
 //        alt_bld.setIcon(R.drawable.);
         alt_bld.setTitle("방법을 선책하세요");
-        alt_bld.setSingleChoiceItems(PhoneModels, -1, new DialogInterface.OnClickListener() {
+        alt_bld.setSingleChoiceItems(backupMethods, -1, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int item) {
                 switch (item) {
                     case 0:
@@ -240,14 +291,16 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
         SQLiteDatabase.loadLibs(this);
 //        mDbHelper = PassDbHelper.getInstance(this);
         mDbHelper = PassDbCipherHelper.getInstance(this);
-        mDbHelper.setPass("1234");
+        String pw = mSetting.getTextSetting(PassSetting.KEY_PASSWORD);
+        if(!"".equals(pw))
+            mDbHelper.setPass(mSetting.getTextSetting(PassSetting.KEY_PASSWORD));
     }
     private void bindViewWithDb() {
         mListView = findViewById(R.id.pass_list);
         mListView.setTextFilterEnabled(true);
 
         Cursor cursor = getPassCursor();
-        Log.e(TAG, "onOptionsItemSelected(): cursor.getCount()=" + cursor.getCount());
+        Log.d(TAG, "bindViewWithDb(): cursor.getCount()=" + cursor.getCount());
 
         mPassAdapter = new PassCursorAdapter(this, cursor);
         mListView.setAdapter(mPassAdapter);
@@ -258,9 +311,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             File sd = Environment.getExternalStorageDirectory();
             File data = Environment.getDataDirectory();
 
-            Log.e(TAG, "sd : " + sd.toString());
-            Log.e(TAG, "data : " + data.toString());
-
             if (sd.canWrite()) {
                 String currentDBPath = new StringBuilder()
                         .append("//data//")
@@ -270,9 +320,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                         .toString();
 
                 String backupDBPath = PassDbHelper.DB_NAME_BACKUP;
-
-                Log.e(TAG, "currentDBPath : " + currentDBPath);
-                Log.e(TAG, "backupDBPath : " + backupDBPath);
 
                 File currentDB = new File(data, currentDBPath);
                 File backupDB = new File(sd, backupDBPath);
@@ -315,10 +362,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                         .append(PassDbHelper.DB_NAME)
                         .toString();
 
-                Log.e(TAG, "restoreDatabase(): currentDBPath : " + currentDBPath);
-                Log.e(TAG, "restoreDatabase(): orgDBPath : " + orgDBPath);
-
-
                 String backupDBPath = PassDbHelper.DB_NAME_BACKUP; // From SD directory.
 
                 File orgDB = new File(data, orgDBPath);
@@ -334,13 +377,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
 
                 if(orgDB.exists()) {
                     boolean b;
-                    Log.e(TAG, "restoreDatabase(): 2");
                     ArrayList<Password> passList = getAllPassItems();
                     mDbHelper.close();
                     b = orgDB.delete();
-                    Log.e(TAG, "restoreDatabase(): orgDB.delete()="+b);
                     b = currentDB.renameTo(orgDB);
-                    Log.e(TAG, "restoreDatabase(): currentDB.renameTo(orgDB)="+b);
 
                     openDatabase();
                     putAllPassItems(mDbHelper.getWritableDb(), passList);
@@ -367,8 +407,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                         .append("//databases//")
                         .append(PassDbHelper.DB_NAME)
                         .toString();
-
-                Log.e(TAG, "currentDBPath : " + currentDBPath);
 
                 String backupDBPath = PassDbHelper.DB_NAME_BACKUP; // From SD directory.
                 File currentDB = new File(data, currentDBPath);
