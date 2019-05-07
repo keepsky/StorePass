@@ -18,6 +18,12 @@
         app:popupTheme="@style/Theme.AppCompat.DayNight.DarkActionBar"
         app:titleTextColor="#FFFFFF" />
 
+
+    <ListView
+        android:id="@+id/setting_list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

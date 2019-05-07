@@ -208,9 +208,6 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
             case R.id.restore_menu_item:
                 restoreDialog();
                 return true;
-
-            case R.id.help_menu_item:
-                return true;
         }
         return super.onOptionsItemSelected(item);
     }

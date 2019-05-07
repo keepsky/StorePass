@@ -24,20 +24,18 @@ public class PassSetting {
 
     public final static int ACCOUNT_NO = 1;
     public final static int ACCOUNT_YES = 2;
-    public final static int LOCK_TYPE_PW = 1;
-    public final static int LOCK_TYPE_FINGER = 2;
+    public final static int LOCK_TYPE_PW = 0;
+    public final static int LOCK_TYPE_FINGER = 1;
     public final static int CLIPBD_ON = 1;
-    public final static int CLIPBD_OFF = 1;
+    public final static int CLIPBD_OFF = 0;
     public final static int SORT_TYPE_TITLE = 1;
-    public final static int SORT_TYPE_ACCOUNT = 2;
-    public final static int SORT_TYPE_URL = 3;
-    public final static int SORT_TYPE_DATE = 4;
+    public final static int SORT_TYPE_DATE = 0;
     public final static int HIDE_PW_YES = 1;
-    public final static int HIDE_PW_NO = 2;
+    public final static int HIDE_PW_NO = 0;
     public final static int AUTO_LOGOUT_YES = 1;
-    public final static int AUTO_LOGOUT_NO = 2;
+    public final static int AUTO_LOGOUT_NO = 0;
     public final static int BG_LOGOUT_YES = 1;
-    public final static int BG_LOGOUT_NO = 2;
+    public final static int BG_LOGOUT_NO = 0;
 
 
 
@@ -66,7 +64,7 @@ public class PassSetting {
         return sInstance;
     }
 
-    public PassSetting getsInstance() {
+    public static PassSetting getInstance() {
         return sInstance;
     }
 

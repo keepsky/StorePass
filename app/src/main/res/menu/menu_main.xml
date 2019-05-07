@@ -17,7 +17,4 @@
     <item
         android:id="@+id/restore_menu_item"
         android:title="복원" />
-    <item
-        android:id="@+id/help_menu_item"
-        android:title="도움말" />
 </menu>
