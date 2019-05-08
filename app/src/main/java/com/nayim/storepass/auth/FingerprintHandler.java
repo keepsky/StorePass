@@ -69,6 +69,10 @@ public class FingerprintHandler extends FingerprintManager.AuthenticationCallbac
             tv_message.setTextColor(ContextCompat.getColor(context, R.color.colorPrimaryDark));
             iv_fingerprint.setImageResource(R.mipmap.ic_done);
             Toast.makeText(context, "OK", Toast.LENGTH_SHORT).show();
+
+            ((Activity)context).setResult(Activity.RESULT_OK);
+            ((Activity)context).finish();
+
 //            linearLayout.setVisibility(LinearLayout.VISIBLE);
 
             //sound effect

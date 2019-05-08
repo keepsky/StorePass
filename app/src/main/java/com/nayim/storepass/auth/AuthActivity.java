@@ -138,4 +138,9 @@ public class AuthActivity extends AppCompatActivity {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public void onBackPressed() {
+        return;
+    }
 }
