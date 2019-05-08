@@ -36,6 +36,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
 import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteOpenHelper;
 
 
 public class MainActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
@@ -49,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     public static final int REQUEST_CODE_EDIT = 1001;
     public static final int REQUEST_CODE_VIEW = 1002;
     public static final int REQUEST_CODE_AUTH = 1003;
+    public static final int REQUEST_CODE_CHANGE_PW = 1004;
 
     public static final int REQUEST_CODE_SIGNIN = 2000;
     public static final int REQUEST_CODE_LOGIN = 2001;
@@ -197,6 +199,10 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()) {
+            case R.id.change_pw_menu_item:
+                startActivityForResult(new Intent(this, PasswordPopupActivity.class), REQUEST_CODE_CHANGE_PW);
+                return true;
+
             case R.id.setting_menu_item:
                 startActivity(new Intent(this, SettingActivity.class));
                 return true;
@@ -255,16 +261,32 @@ public class MainActivity extends AppCompatActivity implements ActivityCompat.On
                 mLoginOkay = true;
                 break;
 
+            case REQUEST_CODE_CHANGE_PW:
+                if(resultCode != RESULT_OK || data == null) {
+                    return;
+                }
+                String newPw = data.getStringExtra("change_pw");
+                changeDbPassword(newPw);
+                Toast.makeText(this, "비밀번호를 변경하였습니다", Toast.LENGTH_SHORT).show();
+                break;
+
             default:
                 break;
         }
+    }
+
+    private void changeDbPassword(String pw) {
+        mSetting.setTextSetting(PassSetting.KEY_PASSWORD, pw);
+        SQLiteDatabase db = mDbHelper.getWritableDb();
+        db.execSQL("PRAGMA rekey = '" + pw + "';");
+        mDbHelper.setPass(pw);
     }
 
     private void restoreDialog() {
         final CharSequence[] backupMethods = {"교체", "병합", "취소"};
         AlertDialog.Builder alt_bld = new AlertDialog.Builder(this);
 //        alt_bld.setIcon(R.drawable.);
-        alt_bld.setTitle("방법을 선책하세요");
+        alt_bld.setTitle("방법을 선택하세요");
         alt_bld.setSingleChoiceItems(backupMethods, -1, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int item) {
                 switch (item) {

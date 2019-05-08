@@ -13,9 +13,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".SettingActivity"></activity>
-        <activity android:name=".StartActivity" />
-        <activity android:name=".auth.AuthActivity" />
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -33,6 +30,10 @@
                 android:value=".MainActivity" />
         </activity>
         <activity android:name=".EditActivity" />
+        <activity android:name=".PasswordPopupActivity" android:theme="@android:style/Theme.Dialog"></activity>
+        <activity android:name=".SettingActivity"></activity>
+        <activity android:name=".StartActivity" />
+        <activity android:name=".auth.AuthActivity" />
     </application>
 
 </manifest>

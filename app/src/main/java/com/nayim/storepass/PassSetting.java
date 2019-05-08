@@ -11,6 +11,8 @@ public class PassSetting {
     SharedPreferences mPref;
     SharedPreferences.Editor mEditor;
 
+    public final static String NAME_SETTING = "pass_settings";
+
     public final static int KEY_ACCOUNT = 0;
     public final static int KEY_LOCK_TYPE = 1;
     public final static int KEY_CLIPBD_ON = 2;
@@ -37,9 +39,6 @@ public class PassSetting {
     public final static int BG_LOGOUT_YES = 1;
     public final static int BG_LOGOUT_NO = 0;
 
-
-
-
     private final static String[] keySetting = {
                     "LOGIN_ACCOUNT",
                     "LOCK_TYPE",
@@ -52,7 +51,7 @@ public class PassSetting {
 
     private PassSetting(Context context) {
         mContext = context;
-        mPref = context.getSharedPreferences("pass_settings", Context.MODE_PRIVATE);
+        mPref = context.getSharedPreferences(NAME_SETTING, Context.MODE_PRIVATE);
         mEditor = mPref.edit();
     }
 

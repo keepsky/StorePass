@@ -56,7 +56,11 @@ public class PassCursorAdapter extends CursorAdapter implements Filterable {
 
         // For initial char of title
         TextView initialText = view.findViewById(R.id.initial_text);
-        char s = title.charAt(0);
+        char s;
+        if(!"".equals(title))
+            s = title.charAt(0);
+        else
+            s = '?';
         initialText.setText(s + "");
         int color = cursor.getInt(cursor.getColumnIndexOrThrow(PassContract.PassEntry.COLUMN_NAME_COLOR));
         circleImage.setColorFilter(color);

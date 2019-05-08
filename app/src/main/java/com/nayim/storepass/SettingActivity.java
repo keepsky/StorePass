@@ -51,12 +51,20 @@ public class SettingActivity extends AppCompatActivity {
             "일정 시간 미사용시 자동 로그아웃합니다"
     };
 
-    int[] swVal = {PassSetting.KEY_LOCK_TYPE,
-            PassSetting.KEY_CLIPBD_ON,
-            PassSetting.KEY_SORT_TYPE,
-            PassSetting.KEY_HIDE_PW,
-            PassSetting.KEY_BG_LOGOUT,
-            PassSetting.KEY_AUTO_LOGOUT
+//    int[] swVal = {PassSetting.KEY_LOCK_TYPE,
+//            PassSetting.KEY_CLIPBD_ON,
+//            PassSetting.KEY_SORT_TYPE,
+//            PassSetting.KEY_HIDE_PW,
+//            PassSetting.KEY_BG_LOGOUT,
+//            PassSetting.KEY_AUTO_LOGOUT
+//    };
+    boolean[] swVal = {
+            true, //KEY_LOCK_TYPE
+            true, //KEY_CLIPBD_ON
+            false, //KEY_SORT_TYPE
+            true, //KEY_HIDE_PW
+            true, //KEY_BG_LOGOUT
+            true //KEY_AUTO_LOGOUT
     };
 
     @Override
@@ -82,8 +90,8 @@ public class SettingActivity extends AppCompatActivity {
         PassSetting setting = PassSetting.getInstance();
 
         for(int i=0;i<mImage.length;i++){
-            boolean val = setting.getIntSetting(swVal[i])==1?true:false;
-            item = new SettingItem(mImage[i], mTitle[i], mDesc[i], val);
+//            boolean val = setting.getIntSetting(swVal[i])==1?true:false;
+            item = new SettingItem(mImage[i], mTitle[i], mDesc[i], swVal[i]);
             list.add(item);
         }
 
@@ -167,19 +175,40 @@ public class SettingActivity extends AppCompatActivity {
             ImageView settingImage = convertView.findViewById(R.id.setting_icon);
             TextView title = convertView.findViewById(R.id.setting_name_text);
             TextView desc = convertView.findViewById(R.id.setting_desc_text);
-            Switch sw = convertView.findViewById(R.id.setting_sw);
+            final Switch sw = convertView.findViewById(R.id.setting_sw);
 
             SettingItem item = mItems.get(position);
             settingImage.setImageResource(item.getImageId());
             title.setText(item.getTitle());
             desc.setText(item.getDescription());
-            sw.setChecked(item.isSwId());
-            sw.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    Toast.makeText(SettingActivity.this, "item = " + position, Toast.LENGTH_SHORT).show();
-                }
-            });
+
+            if(item.isSwId()) {
+                final PassSetting setting = PassSetting.getInstance();
+                sw.setChecked(setting.getIntSetting(position+1)==1?true:false);
+                sw.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                        int item = position+1;
+                        switch(item) {
+                            case PassSetting.KEY_LOCK_TYPE:
+                            case PassSetting.KEY_CLIPBD_ON:
+                            case PassSetting.KEY_SORT_TYPE:
+                            case PassSetting.KEY_HIDE_PW:
+                            case PassSetting.KEY_AUTO_LOGOUT:
+                            case PassSetting.KEY_BG_LOGOUT:
+                                setting.setIntSetting(item, isChecked?1:0);
+                                break;
+                            default:
+                                break;
+
+                        }
+
+                        Toast.makeText(SettingActivity.this, "item = " + position, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } else {
+                sw.setVisibility(View.INVISIBLE);
+            }
 
             return convertView;
         }

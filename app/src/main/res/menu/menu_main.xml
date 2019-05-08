@@ -9,12 +9,16 @@
         app:actionViewClass="android.support.v7.widget.SearchView"
         app:showAsAction="always" />
     <item
-        android:id="@+id/setting_menu_item"
-        android:title="설정" />
+        android:id="@+id/change_pw_menu_item"
+        android:title="비밀번호 변경" />
     <item
         android:id="@+id/backup_menu_item"
         android:title="백업" />
     <item
         android:id="@+id/restore_menu_item"
         android:title="복원" />
+    <item
+        android:id="@+id/setting_menu_item"
+        android:title="설정" />
+
 </menu>
